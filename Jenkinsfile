@@ -64,7 +64,6 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy') {
             agent {
                 docker {
@@ -73,7 +72,6 @@ pipeline {
                 }
             }
             steps {
-                // FIXED: Wrapped securely using explicit Jenkins credential injection block
                 withCredentials([string(credentialsId: 'netlify-token', variable: 'NETLIFY_AUTH_TOKEN')]) {
                     sh '''
                         npm install netlify-cli
@@ -83,12 +81,16 @@ pipeline {
                         echo "=== Verifying Credentials ==="
                         node_modules/.bin/netlify status
                         
-                        echo "=== Uploading Build to Netlify ==="
-                        # FIXED: Appended direct execution site flag mapping to pass site reference securely
+                        echo "=== Uploading Pre-Built Assets to Netlify ==="
+                        # التعديل الحاسم: نأمر الأداة برفع الفولدر الجاهز مباشرة ومنع بناء الكود في السحاب
                         node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID
                     '''
                 }
             }
         }
+        
+                
+            
+        
     }
 }
