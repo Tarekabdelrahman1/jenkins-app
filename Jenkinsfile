@@ -83,7 +83,7 @@ pipeline {
                         
                         echo "=== Uploading Pre-Built Assets to Netlify ==="
                         # التعديل الحاسم: نأمر الأداة برفع الفولدر الجاهز مباشرة ومنع بناء الكود في السحاب
-                        node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID
+                        node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID --build=false
                     '''
                 }
             }
