@@ -3,11 +3,9 @@ pipeline {
 
     environment {
         NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
-        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
 
     stages {
-
         stage('Build') {
             agent {
                 docker {
@@ -17,12 +15,8 @@ pipeline {
             }
             steps {
                 sh '''
-                    ls -la
-                    node --version
-                    npm --version
                     npm ci
                     npm run build
-                    ls -la
                 '''
             }
         }
@@ -36,16 +30,13 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
-                        sh '''
-                            #test -f build/index.html
-                            npm test
-                        '''
+                        sh 'CI=true npm test'
                     }
                     post {
                         always {
-                            junit 'jest-results/junit.xml'
+                            // FIXED: Replaced 'jest-results/junit.xml' with deep wildcard lookup
+                            junit '**/junit.xml'
                         }
                     }
                 }
@@ -57,19 +48,17 @@ pipeline {
                             reuseNode true
                         }
                     }
-
                     steps {
                         sh '''
                             npm install serve
                             node_modules/.bin/serve -s build &
                             sleep 10
-                            npx playwright test  --reporter=html
+                            npx playwright test --reporter=html
                         '''
                     }
-
                     post {
                         always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Playwright HTML Report', reportTitles: ''])
                         }
                     }
                 }
@@ -84,13 +73,21 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                    npm install netlify-cli
-                    node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod
-                '''
+                // FIXED: Wrapped securely using explicit Jenkins credential injection block
+                withCredentials([string(credentialsId: 'netlify-token', variable: 'NETLIFY_AUTH_TOKEN')]) {
+                    sh '''
+                        npm install netlify-cli
+                        node_modules/.bin/netlify --version
+                        echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                        
+                        echo "=== Verifying Credentials ==="
+                        node_modules/.bin/netlify status
+                        
+                        echo "=== Uploading Build to Netlify ==="
+                        # FIXED: Appended direct execution site flag mapping to pass site reference securely
+                        node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID
+                    '''
+                }
             }
         }
     }
