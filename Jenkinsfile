@@ -2,7 +2,6 @@ pipeline {
     agent any
     environment {
         NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
-        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
     }
     
     stages {
@@ -65,27 +64,39 @@ pipeline {
         }
 
         stage('Deploy') {
-            agent {
-                docker {
-                    image 'node:18-alpine'
-                    reuseNode true
-                }
-            }
-            steps {
-                withEnv(["NETLIFY_AUTH_TOKEN=${NETLIFY_AUTH_TOKEN}"]) {
-                    sh '''
-                        npm install netlify-cli@20.1.1
-                        node_modules/.bin/netlify --version
-                        echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                        
-                        echo "=== Verifying Credentials ==="
-                        node_modules/.bin/netlify status --auth $NETLIFY_AUTH_TOKEN
-                        
-                        echo "=== Uploading Build to Netlify ==="
-                        node_modules/.bin/netlify deploy --dir=build --prod --auth $NETLIFY_AUTH_TOKEN
-                    '''
-                }
-            }
+    agent {
+        docker {
+            image 'node:18-alpine'
+            reuseNode true
         }
+    }
+
+    steps {
+        withCredentials([
+            string(
+                credentialsId: 'netlify-token',
+                variable: 'NETLIFY_AUTH_TOKEN'
+            )
+        ]) {
+
+            sh '''
+                npm install netlify-cli@20.1.1
+
+                echo "=== Netlify CLI Version ==="
+                node_modules/.bin/netlify --version
+
+                echo "=== Checking Auth ==="
+                node_modules/.bin/netlify status
+
+                echo "=== Deploying ==="
+                node_modules/.bin/netlify deploy \
+                  --site=$NETLIFY_SITE_ID \
+                  --dir=build \
+                  --prod \
+                  --auth=$NETLIFY_AUTH_TOKEN
+            '''
+        }
+    }
+}
     }
 }
