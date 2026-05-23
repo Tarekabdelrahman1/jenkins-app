@@ -1,6 +1,9 @@
 pipeline {
     agent any
-
+    environment {
+                NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
+                    }
+    }
     stages {
         // 1. مرحلة البناء (شغالة كفاءة)
         stage('Build') {
@@ -79,6 +82,7 @@ pipeline {
                 sh '''
                     npm install netlify-cli@20.1.1
                     node_modules/.bin/netlify --version
+                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
                 '''
             }
         }
