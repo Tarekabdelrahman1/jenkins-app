@@ -1,12 +1,11 @@
 pipeline {
     agent any
     environment {
-                NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
-                NETLIFY_AUTH_TOKEN = credentials('netlify-token')
-                                    }
+        NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
+        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+    }
     
     stages {
-        // 1. مرحلة البناء (شغالة كفاءة)
         stage('Build') {
             agent {
                 docker {
@@ -22,11 +21,8 @@ pipeline {
             }
         }
 
-        // 2. مرحلة الاختبارات المتوازية
         stage('Tests') {
             parallel {
-                
-                // الفرع الأول: الـ Unit tests (تم تصليحه)
                 stage('Unit tests') {
                     agent {
                         docker {
@@ -35,18 +31,15 @@ pipeline {
                         }
                     }
                     steps {
-                        // تفعيل CI=true إجباري عشان التيست يقفل وميعلقش
                         sh 'CI=true npm test'
                     }
                     post {
                         always {
-                            // التعديل الذهبي: البحث عن ملف الـ XML في أي مكان في المشروع تلقائياً
                             junit '**/junit.xml'
                         }
                     }
                 }
 
-                // الفرع الثاني: الـ E2E (شغال كفاءة 100%)
                 stage('E2E') {
                     agent {
                         docker {
@@ -71,7 +64,6 @@ pipeline {
             }
         }
 
-        // 3. مرحلة الـ Deploy (هتشتغل لأول مرة بعد نجاح التيست)
         stage('Deploy') {
             agent {
                 docker {
@@ -80,13 +72,19 @@ pipeline {
                 }
             }
             steps {
-                sh '''
-                    npm install netlify-cli@20.1.1
-                    node_modules/.bin/netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    node_modules/.bin/netlify status
-                    node_modules/.bin/netlify deploy --dir=build --prod
-                '''
+                withEnv(["NETLIFY_AUTH_TOKEN=${NETLIFY_AUTH_TOKEN}"]) {
+                    sh '''
+                        npm install netlify-cli@20.1.1
+                        node_modules/.bin/netlify --version
+                        echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+                        
+                        echo "=== Verifying Credentials ==="
+                        node_modules/.bin/netlify status --auth $NETLIFY_AUTH_TOKEN
+                        
+                        echo "=== Uploading Build to Netlify ==="
+                        node_modules/.bin/netlify deploy --dir=build --prod --auth $NETLIFY_AUTH_TOKEN
+                    '''
+                }
             }
         }
     }
