@@ -28,7 +28,7 @@ pipeline {
         }
 
         // 2. مرحلة النشر عل طول (تخطينا التيست)
-        stage('Deploy') {
+       stage('Deploy') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -46,7 +46,8 @@ pipeline {
                         node_modules/.bin/netlify status
                         
                         echo "=== Uploading Build to Netlify ==="
-                        node_modules/.bin/netlify deploy --dir=build --prod
+                        # التعديل السحري: تمرير الـ Site ID صراحة للأمر لإنهاء مشكلة الـ Link
+                        node_modules/.bin/netlify deploy --dir=build --prod --site $NETLIFY_SITE_ID
                     '''
                 }
             }
