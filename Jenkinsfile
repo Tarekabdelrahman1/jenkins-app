@@ -85,12 +85,13 @@ pipeline {
                 echo "=== Netlify CLI Version ==="
                 node_modules/.bin/netlify --version
 
-                echo "=== Deploying to Netlify ==="
+                echo "Deploying to Netlify..."
+
                 node_modules/.bin/netlify deploy \
-                  --site=$NETLIFY_SITE_ID \
-                  --dir=build \
+                  --site="$NETLIFY_SITE_ID" \
+                  --dir="build" \
                   --prod \
-                  --auth=$NETLIFY_AUTH_TOKEN
+                  --auth="$NETLIFY_AUTH_TOKEN"
             '''
         }
     }
