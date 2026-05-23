@@ -63,7 +63,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+       stage('Deploy') {
     agent {
         docker {
             image 'node:18-alpine'
@@ -85,10 +85,7 @@ pipeline {
                 echo "=== Netlify CLI Version ==="
                 node_modules/.bin/netlify --version
 
-                echo "=== Checking Auth ==="
-                node_modules/.bin/netlify status
-
-                echo "=== Deploying ==="
+                echo "=== Deploying to Netlify ==="
                 node_modules/.bin/netlify deploy \
                   --site=$NETLIFY_SITE_ID \
                   --dir=build \
