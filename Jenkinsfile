@@ -2,14 +2,12 @@ pipeline {
     agent any
 
     environment {
-        NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
-        NETLIFY_AUTH_TOKEN = credentials('netlify-token')
         REACT_APP_VERSION = "1.0.$BUILD_ID"
     }
 
     stages {
         
-        stage('Build') {
+        /*stage('Build') {
             agent {
                 docker {
                     image 'node:18-alpine'
@@ -26,8 +24,8 @@ pipeline {
                     ls -la
                 '''
             }
-        }
-        stage('AWS') {
+        }*/
+        stage('Deploy to AWS') {
             agent {
                 docker {
                     image 'amazon/aws-cli'
@@ -37,12 +35,15 @@ pipeline {
             }
             environment {
                 AWS_S3_BUCKET = 'jenkins-demo11'
+                AWS_DEFAULT_REGION = 'us-east-1'
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
                     sh '''
                         aws --version
-                        aws s3 sync build s3://$AWS_S3_BUCKET
+                        aws ecs register-task-definition --cli-input-json file://aws/task-definition.json
+                        aws ecs update-service --cluster learn-jenkins-app-cluster-prod --service LearnJenkinsApp-TaskDefinition-Prod-service-w5ilxwu9 --task-definition LearnJenkinsApp-TaskDefinition-Prod:2
+
                     '''
                 }
             }
