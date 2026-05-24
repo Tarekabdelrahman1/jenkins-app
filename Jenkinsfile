@@ -36,6 +36,9 @@ pipeline {
             environment {
                 AWS_S3_BUCKET = 'jenkins-demo11'
                 AWS_DEFAULT_REGION = 'us-east-1'
+                AWS_ECS_CLUSTER = 'learn-jenkins-app-cluster-prod'
+                AWS_ECS_SERVICE_PROD = 'LearnJenkinsApp-TaskDefinition-Prod-service-w5ilxwu9'
+                AWS_ECS_TD_PROD = 'LearnJenkinsApp-TaskDefinition-Prod' 
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
@@ -43,8 +46,8 @@ pipeline {
                         aws --version
                         yum install -y jq
                         LAST_REVISION=$(aws ecs register-task-definition --cli-input-json file://aws/task-definition.json | jq '.taskDefinition.revision')
-                        aws ecs update-service --cluster learn-jenkins-app-cluster-prod --service LearnJenkinsApp-TaskDefinition-Prod-service-w5ilxwu9 --task-definition LearnJenkinsApp-TaskDefinition-Prod:$LAST_REVISION
-
+                        aws ecs update-service --cluster $AWS_ECS_CLUSTER --service $AWS_ECS_SERVICE_PROD --task-definition $AWS_ECS_TD_PROD:$LAST_REVISION
+                        aws ecs wait services-stable --cluster $AWS_ECS_CLUSTER --services $AWS_ECS_SERVICE_PROD
                     '''
                 }
             }
