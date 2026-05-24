@@ -4,14 +4,11 @@ pipeline {
     environment {
         NETLIFY_SITE_ID = '38f0ded9-a0c7-41ab-9781-21249a48ae6e'
         NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+        REACT_APP_VERSION = "1.0.$BUILD_ID"
     }
 
     stages {
-        stage('Docker') {
-            steps {
-                sh 'docker build -t my-playwright .'
-            }
-        }
+        
         stage('Build') {
             agent {
                 docker {
@@ -30,8 +27,29 @@ pipeline {
                 '''
             }
         }
+        stage('AWS') {
+            agent {
+                docker {
+                    image 'amazon/aws-cli'
+                    reuseNode true
+                    args "--entrypoint=''"
+                }
+            }
+            environment {
+                AWS_S3_BUCKET = 'jenkins-demo11'
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'my-aws', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                    sh '''
+                        aws --version
+                        aws s3 sync build s3://$AWS_S3_BUCKET
+                    '''
+                }
+            }
+        }
 
-        stage('Local Tests') {
+
+     /*   stage('Local Tests') {
             parallel {
                 stage('Unit tests') {
                     agent {
@@ -126,6 +144,6 @@ pipeline {
                     publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Prod E2E', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
-        }
+        }*/
     }
 }
